@@ -1,0 +1,25 @@
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(9, OUTPUT);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    String jsonString = Serial.readStringUntil('\n');
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, jsonString);
+    if (error) {
+      Serial.println("Error in JSON string");
+    } else {
+      float voltmetre = doc["voltmetre"];
+      voltmetre = map(voltmetre, 0, 2100, 0, 37);
+      Serial.println(voltmetre);
+      analogWrite(9, voltmetre);
+    }
+  }
+}
+
+// { "voltmetre": 36}

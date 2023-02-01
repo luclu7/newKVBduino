@@ -1,0 +1,5 @@
+[requires]
+libserial/cci.20200930
+
+[generators]
+cmake
