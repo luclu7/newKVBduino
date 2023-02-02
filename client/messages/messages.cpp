@@ -20,9 +20,9 @@ bool sendMessage(LibSerial::SerialStream* serial_stream, uint8_t varName, uint8_
   std::cout << "Sent: " << (unsigned int) header << " " << (unsigned int) varName << " " << (unsigned int) varValue << " " << (unsigned int) checksum << std::endl;
 
   // read ack
-  char ack;
-  serial_stream->read(&ack, 1);
-  if(ack == ack) {
+  char received_ack;
+  serial_stream->read(&received_ack, 1);
+  if(received_ack == ack) {
     std::cout << "Acknowledgement received" << std::endl;
     return true;
   } else {
