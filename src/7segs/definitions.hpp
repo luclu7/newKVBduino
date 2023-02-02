@@ -49,3 +49,6 @@ const uint8_t UC512[] = {0b01101101, 0b00000110, 0b01011011,
 const uint8_t uwu[] =   {0b00100011, 0b00001000, 0b00100011,
                          0b00100011, 0b00001000, 0b00100011
                         };       // 16
+
+
+const uint8_t numbersOneToSix[]= { 0x06, 0x5b, 0x6e, 0x66, 0x6d, 0x7d }; // 17

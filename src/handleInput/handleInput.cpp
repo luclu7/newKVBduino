@@ -91,6 +91,10 @@ void handleInput(Message msg) {
 				setVisu(uwu); // ^_^
 				break;
 
+      case 17:
+        setVisu(numbersOneToSix);
+        break;
+
 			default:
 				break;
 		}
