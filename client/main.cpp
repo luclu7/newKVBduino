@@ -1,25 +1,35 @@
 #include <iostream>
-#include "/usr/include/libserial/SerialStream.h"
-#include "/usr/include/libserial/SerialPort.h"
+#include "libserial/SerialStream.h"
 
 #include <chrono>
 #include <thread>
 
+#include "messages/messages.hpp"
 
-void sendMessage(LibSerial::SerialStream* serialPort, int varName, int varValue);
-void readMessage(LibSerial::SerialStream* serial_stream);
+#include "tests/tests.hpp"
+
 void configureSerialPort(LibSerial::SerialStream* serial_stream, std::string portName);
+void testLamps(LibSerial::SerialStream* serial_stream);
+void test7segments(LibSerial::SerialStream* serial_stream);
 
-#define VOLTMETER 0x02
+
+#define ID_PANNE_SOL 0x01
+#define ID_PANNE_ENGIN 0x02
+#define ID_V 0x03
+#define ID_FU 0x04
+#define ID_BP_VAL 0x05
+#define ID_BP_MV 0x06
+#define ID_BP_FC 0x07
+#define ID_SF 0x08
+#define ID_VISU 0x09
 
 
-int main()
+int main(int argc, char** argv)
 {
   // Create a SerialStream object
   LibSerial::SerialStream serial_stream;
 
-  configureSerialPort(&serial_stream, "/dev/ttyACM1");
-
+  configureSerialPort(&serial_stream, "/dev/ttyACM0");
 
   std::cout << "Serial port is open: " << serial_stream.IsOpen() << std::endl;
 
@@ -30,7 +40,14 @@ int main()
   
   std::cout << "Writing to serial port" << std::endl;
 
-  int varName;
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+  testLamps(&serial_stream);
+
+  test7segments(&serial_stream);
+
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   // for (size_t i = 0; i < 255; i++)
   // {
@@ -45,27 +62,25 @@ int main()
   // }
 
 
-
-  sendMessage(&serial_stream, VOLTMETER, 160);
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
-  sendMessage(&serial_stream, VOLTMETER, 155);
-  
-
-
   // Define the header, variable name, value and checksum
   std::cout << "Waiting for 2 seconds" << std::endl;
 
   // sleep for 2 seconds
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-  std::cout << std::endl <<  "Number of bytes available: " << serial_stream.rdbuf()->in_avail() << std::endl;
+//  std::cout << std::endl <<  "Number of bytes available: " << serial_stream.rdbuf()->in_avail() << std::endl;
 
 
   // write 132 to variable 1 and wait for response
-  sendMessage(&serial_stream, 0x01, 132);
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  // sendMessage(&serial_stream, 0x01, 132);
+  // std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-  std::cout << "Number of bytes available: " << serial_stream.rdbuf()->in_avail() << std::endl;
+
+  // sendMessage(&serial_stream, 0x01, 0);
+  // sendMessage(&serial_stream, 0x02, 0);
+
+  // sendMessage(&serial_stream, 0x09, 4);
+
 
   while (false)
   {
@@ -75,7 +90,9 @@ int main()
 
   bool exit = false;
 
-  std::string input;
+  std::string input = "";
+
+  int varName = 9;
 
   while (!exit)
   {
@@ -100,94 +117,6 @@ int main()
   serial_stream.Close();
 
   return 0;
-}
-
-void sendMessage(LibSerial::SerialStream* serial_stream, int varName, int varValue) {
-  int header = 0x23;
-  int checksum = header + varName + varValue;
-
-  // on prie que ça marche
-  serial_stream->write((char*)&header, 1);
-  serial_stream->write((char*)&varName, 1);
-  serial_stream->write((char*)&varValue, 1);
-  serial_stream->write((char*)&checksum, 1);
-
-  std::cout << "Sent: " << header << " " << varName << " " << varValue << " " << checksum << std::endl;
-
-  // read ack
-  char ack;
-  serial_stream->read(&ack, 1);
-  if(ack == header+1) {
-    std::cout << "Acknowledgement received" << std::endl;
-  } else {
-    std::cout << "Acknowledgement not received" << std::endl;
-  }
-}
-
-void readMessage(LibSerial::SerialStream* serial_stream) {
-    if (serial_stream->rdbuf()->in_avail() >= 4) {
-      //std::cout << "2 Number of bytes available: " << serial_stream->rdbuf()->in_avail() << std::endl;
-
-
-      uint8_t header, varName, varValue, checksum;
-
-      const int BUFFER_SIZE = serial_stream->rdbuf()->in_avail()+1;
-      char input_buffer[BUFFER_SIZE];
-
-      serial_stream->read( input_buffer, BUFFER_SIZE );
-
-      std::cout << std::endl;
-
-      header = (unsigned int) input_buffer[1];
-      varName = (unsigned int) input_buffer[2];
-      varValue = (unsigned int) input_buffer[3];
-      checksum = (unsigned int) input_buffer[4];
-      
-      //std::cout << "3 Number of bytes available: " << serial_stream->rdbuf()->in_avail() << std::endl;
-      std::cout << "Received: " << (unsigned int) header << " " << (unsigned int) varName << " " << (unsigned int) varValue << " " << (unsigned int) checksum << std::endl;
-      std::cout << "Variable name: " << (unsigned int) varName << " Variable value: " << (unsigned int) varValue << std::endl;
-
-      // Verify the checksum
-      if (header + varName + varValue == checksum) {
-        std::cout << "Correct checksum !" << std::endl;
-
-        // send acknowledgement
-        //serial_stream->write((char*)&header, 1);
-
-        std::cout << "Acknowledgement sent" << std::endl;
-
-        switch (varName)
-        {
-        case 0x01:
-          std::cout << "BP VAL: " << (unsigned int) varValue << std::endl;
-          break;
-        
-        case 0x02:
-          std::cout << "BP MV: " << (unsigned int) varValue << std::endl;
-          break;          
-
-        case 0x03:
-          std::cout << "BP FC: " << (unsigned int) varValue << std::endl;
-          break;
-
-        case 0x04:
-          std::cout << "BP TEST: " << (unsigned int) varValue << std::endl;
-          break;
-
-        case 0x05:
-          std::cout << "BP SF: " << (unsigned int) varValue << std::endl;
-          break;
-
-        default:
-          break;
-        }
-      } else {
-        // send error
-        // TODO: *serial_stream << 0x25;
-        std::cout << "Incorrect checksum !" << std::endl;
-        //std::cout << "Error sent" << std::endl;
-      }
-    }
 }
 
 void configureSerialPort(LibSerial::SerialStream* serial_stream, std::string portName) {

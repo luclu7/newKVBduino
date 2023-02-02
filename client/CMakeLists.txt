@@ -10,5 +10,8 @@ conan_basic_setup()
 #find_library(LIBSERIAL serial)
 
 
-add_executable(client main.cpp)
+# add file messages/messages.cpp
+
+
+add_executable(client main.cpp messages/messages.cpp tests/tests.cpp)
 target_link_libraries(client ${CONAN_LIBS})
