@@ -1,5 +1,6 @@
 #include <iostream>
-#include "libserial/SerialStream.h"
+
+#include "serial/serial.h"
 
 #include <chrono>
 #include <thread>
@@ -8,9 +9,10 @@
 
 #include "tests/tests.hpp"
 
-void configureSerialPort(LibSerial::SerialStream* serial_stream, std::string portName);
-void testLamps(LibSerial::SerialStream* serial_stream);
-void test7segments(LibSerial::SerialStream* serial_stream);
+#define serialPortNameArduino "/dev/cu.wlan-debug"
+
+
+void configureSerialPort(serial::Serial* serial_stream, std::string portName);
 
 
 #define ID_PANNE_SOL 0x01
@@ -24,14 +26,31 @@ void test7segments(LibSerial::SerialStream* serial_stream);
 #define ID_VISU 0x09
 
 
+
 int main(int argc, char** argv)
 {
   // Create a SerialStream object
-  LibSerial::SerialStream serial_stream;
+  serial::Serial serial_stream;
 
-  configureSerialPort(&serial_stream, "/dev/ttyACM0");
+  // list serial ports
 
-  std::cout << "Serial port is open: " << serial_stream.IsOpen() << std::endl;
+  std::cout << "Available serial ports:" << std::endl;
+  std::vector<serial::PortInfo> devices_found = serial::list_ports();
+
+	std::vector<serial::PortInfo>::iterator iter = devices_found.begin();
+
+	while( iter != devices_found.end() )
+	{
+		serial::PortInfo device = *iter++;
+
+    //if(device.hardware_id != "n/a") {
+  		printf( "(%s, %s, %s)\n", device.port.c_str(), device.description.c_str(), device.hardware_id.c_str() );
+    //}
+	}
+
+  configureSerialPort(&serial_stream, serialPortNameArduino);
+
+  std::cout << "Serial port is open: " << serial_stream.isOpen() << std::endl;
 
   std::cout << "Waiting for 2 seconds" << std::endl;
 
@@ -114,20 +133,21 @@ int main(int argc, char** argv)
   std::cout << "Closing serial port" << std::endl;
   
   // Close the serial port
-  serial_stream.Close();
+  serial_stream.close();
 
   return 0;
 }
 
-void configureSerialPort(LibSerial::SerialStream* serial_stream, std::string portName) {
-  // Open the serial port
-  serial_stream->Open(portName);
-
+void configureSerialPort(serial::Serial* serial_stream, std::string portName) {
+  serial_stream->setPort(portName);
+  
   // Set the serial port parameters
-  serial_stream->SetBaudRate(LibSerial::BaudRate::BAUD_9600);
-  serial_stream->SetCharacterSize(LibSerial::CharacterSize::CHAR_SIZE_8);
-  serial_stream->SetStopBits(LibSerial::StopBits::STOP_BITS_1);
-  serial_stream->SetParity(LibSerial::Parity::PARITY_NONE);
-  serial_stream->SetFlowControl(LibSerial::FlowControl::FLOW_CONTROL_NONE);
-}
+  serial_stream->setBaudrate(9600);
+  serial_stream->setBytesize(serial::eightbits);
+  serial_stream->setStopbits(serial::stopbits_one);
+  serial_stream->setParity(serial::parity_none);
+  serial_stream->setFlowcontrol(serial::flowcontrol_none);
 
+  // Open the serial port
+  serial_stream->open();
+}

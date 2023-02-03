@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libserial/SerialStream.h>
+#include "serial/serial.h"
 
-void testLamps(LibSerial::SerialStream* serial_stream);
-void test7segments(LibSerial::SerialStream* serial_stream);
+void testLamps(serial::Serial* serial_stream);
+void test7segments(serial::Serial* serial_stream);

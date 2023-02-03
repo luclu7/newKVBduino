@@ -2,11 +2,11 @@
 #include <thread>
 #include <chrono>
 
-#include "libserial/SerialStream.h"
+#include "serial/serial.h"
 
 #include "../messages/messages.hpp"
 
-void testLamps(LibSerial::SerialStream* serial_stream) {
+void testLamps(serial::Serial* serial_stream) {
   std::cout << "-- Lamps test --" << std::endl;
 
   for (uint8_t i = 1; i <= 8; i++)
@@ -29,7 +29,7 @@ void testLamps(LibSerial::SerialStream* serial_stream) {
   }
 }
 
-void test7segments(LibSerial::SerialStream* serial_stream) {
+void test7segments(serial::Serial* serial_stream) {
   std::cout << "-- 7 segments test --" << std::endl;
 
 

@@ -1,26 +1,31 @@
-#include "libserial/SerialStream.h"
+#include "serial/serial.h"
 #include "messages.hpp"
 
 #include "iostream"
 
 int header = 0x23;
-int ack = 0x24;
+#define ack 0x24
+
 int varName, varValue, checksum;
 
-
-bool sendMessage(LibSerial::SerialStream* serial_stream, uint8_t varName, uint8_t varValue) {
+/// @brief Envoie un message sur le port série et vérifie l'acknowledgement
+/// @param serial_stream port série sur lequel envoyer le message
+/// @param varName id de la variable à modifier
+/// @param varValue valeur à envoyer
+/// @return bool true si l'acknowledgement a été reçu, false sinon
+bool sendMessage(serial::Serial* serial_stream, uint8_t varName, uint8_t varValue) {
   int checksum = header + varName + varValue;
 
   // on prie que ça marche
-  serial_stream->write((char*)&header, 1);
-  serial_stream->write((char*)&varName, 1);
-  serial_stream->write((char*)&varValue, 1);
-  serial_stream->write((char*)&checksum, 1);
+  serial_stream->write((const uint8_t*)&header, 1);
+  serial_stream->write((const uint8_t*)&varName, 1);
+  serial_stream->write((const uint8_t*)&varValue, 1);
+  serial_stream->write((const uint8_t*)&checksum, 1);
 
   std::cout << "Sent: " << (unsigned int) header << " " << (unsigned int) varName << " " << (unsigned int) varValue << " " << (unsigned int) checksum << std::endl;
 
   // read ack
-  char received_ack;
+  uint8_t received_ack;
   serial_stream->read(&received_ack, 1);
   if(received_ack == ack) {
     std::cout << "Acknowledgement received" << std::endl;
@@ -31,28 +36,38 @@ bool sendMessage(LibSerial::SerialStream* serial_stream, uint8_t varName, uint8_
   }
 }
 
-bool sendMessage(LibSerial::SerialStream* serialPort, Message msg) {
+bool sendMessage(serial::Serial* serialPort, Message msg) {
   return sendMessage(serialPort, msg.varName, msg.varValue);
 }
 
-void readMessage(LibSerial::SerialStream* serial_stream) {
-    if (serial_stream->rdbuf()->in_avail() >= 4) {
+void readMessage(serial::Serial* serial_stream) {
+    if (serial_stream->available() >= 4) {
       //std::cout << "2 Number of bytes available: " << serial_stream->rdbuf()->in_avail() << std::endl;
 
 
-      uint8_t header, varName, varValue, checksum;
+      int header, varName, varValue, checksum;
 
-      const int BUFFER_SIZE = serial_stream->rdbuf()->in_avail()+1;
-      char input_buffer[BUFFER_SIZE];
+      //serial::Serial::ScopedReadLock (serial_stream);
+      const int BUFFER_SIZE = serial_stream->available();
+      uint8_t input_buffer[BUFFER_SIZE];
 
-      serial_stream->read( input_buffer, BUFFER_SIZE );
+      // read to vector of uint8_t
+      std::vector<uint8_t> input_buffer_vector;
+      serial_stream->read(input_buffer_vector, BUFFER_SIZE);
 
-      std::cout << std::endl;
+      // print vector content
+    /*   std::cout << "Vector content: ";
+      for (int i = 0; i < BUFFER_SIZE; i++) {
+        std::cout << (unsigned int) input_buffer_vector[i] << " ";
+      }
+ */
 
-      header = (unsigned int) input_buffer[1];
-      varName = (unsigned int) input_buffer[2];
-      varValue = (unsigned int) input_buffer[3];
-      checksum = (unsigned int) input_buffer[4];
+      header = (unsigned int) input_buffer_vector[0];
+      varName = (unsigned int) input_buffer_vector[1];
+      varValue = (unsigned int) input_buffer_vector[2];
+      checksum = (unsigned int) input_buffer_vector[3];
+
+      std::cout << "Number of bytes available now: " << serial_stream->available() << std::endl;
       
       //std::cout << "3 Number of bytes available: " << serial_stream->rdbuf()->in_avail() << std::endl;
       std::cout << "Received: " << (unsigned int) header << " " << (unsigned int) varName << " " << (unsigned int) varValue << " " << (unsigned int) checksum << std::endl;
@@ -63,7 +78,7 @@ void readMessage(LibSerial::SerialStream* serial_stream) {
         std::cout << "Correct checksum !" << std::endl;
 
         // send acknowledgement
-        //serial_stream->write((char*)&header, 1);
+        serial_stream->write((const uint8_t*)&header, 1);
 
         std::cout << "Acknowledgement sent" << std::endl;
 
