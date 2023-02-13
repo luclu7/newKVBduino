@@ -87,6 +87,14 @@ void handleInput(Message msg) {
 				setVisu(faute);
 				break;
 
+      case 10:
+        setVisu(PA400);
+        break;
+
+      case 11:
+        setVisu(UC512);
+        break;
+
 			case 16:
 				setVisu(uwu); // ^_^
 				break;
